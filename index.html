@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urna Eletrônica</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .urna {
+            background-color: #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            width: 400px;
+        }
+        .tela {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .numero-candidato {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .digito {
+            width: 30px;
+            height: 40px;
+            border: 1px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+        .teclado {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .teclado.hidden {
+            display: none;
+        }
+        .tecla {
+            width: 60px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .acoes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .acoes button {
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #branco {
+            background-color: #fff;
+            color: #000;
+        }
+        #corrige {
+            background-color: #f0a500;
+        }
+        #confirma {
+            background-color: #00a86b;
+            color: #fff;
+        }
+        #confirma.large {
+            width: 100%;
+            height: 60px;
+            font-size: 24px;
+        }
+        .info-candidato {
+            margin-top: 20px;
+        }
+        .foto-candidato {
+            width: 100px;
+            height: 100px;
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .urna {
+                width: 90%;
+                padding: 10px;
+            }
+            .teclado {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .tecla {
+                width: 100%;
+                height: 50px;
+            }
+            .acoes {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .acoes button {
+                width: 100%;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="urna">
+        <div class="tela">
+            <h2 id="titulo-votacao">Votação para Vereador</h2>
+            <div class="numero-candidato" id="numero-candidato">
+                <div class="digito"></div>
+                <div class="digito"></div>
+                <div class="digito"></div>
+                <div class="digito"></div>
+                <div class="digito"></div>
+            </div>
+            <div class="info-candidato hidden" id="info-candidato">
+                <div class="foto-candidato" id="foto-candidato"></div>
+                <div id="nome-candidato"></div>
+                <div id="partido-candidato"></div>
+            </div>
+            <div class="info-candidato hidden" id="info-vice">
+                <div class="foto-candidato" id="foto-vice"></div>
+                <div id="nome-vice"></div>
+            </div>
+        </div>
+        <div class="teclado">
+            <button class="tecla" onclick="digitarNumero(1)">1</button>
+            <button class="tecla" onclick="digitarNumero(2)">2</button>
+            <button class="tecla" onclick="digitarNumero(3)">3</button>
+            <button class="tecla" onclick="digitarNumero(4)">4</button>
+            <button class="tecla" onclick="digitarNumero(5)">5</button>
+            <button class="tecla" onclick="digitarNumero(6)">6</button>
+            <button class="tecla" onclick="digitarNumero(7)">7</button>
+            <button class="tecla" onclick="digitarNumero(8)">8</button>
+            <button class="tecla" onclick="digitarNumero(9)">9</button>
+            <button class="tecla" onclick="digitarNumero(0)">0</button>
+        </div>
+        <div class="acoes">
+            <button id="branco" onclick="votoBranco()">BRANCO</button>
+            <button id="corrige" onclick="corrige()">CORRIGE</button>
+            <button id="confirma" onclick="confirma()">CONFIRMA</button>
+        </div>
+    </div>
+
+    <script>
+        const candidatos = {
+            vereador: {
+                '10997': { nome: 'Gilson Fidélis', partido: 'Republicanos', foto: 'vereador.png' },
+            },
+            prefeito: {
+                '22': { 
+                    nome: 'Eduardo Boigues', 
+                    partido: 'Partido Liberal - PL', 
+                    foto: 'eduardo.png',
+                    vice: {
+                        nome: 'Rogério Tarento',
+                        foto: 'vice.png'
+                    }
+                },
+            }
+        };
+
+        let tipoVotacao = 'vereador';
+        let numeroDigitado = '';
+        const audiourna = new Audio('audiourna.mp3');
+
+        function digitarNumero(numero) {
+            if (numeroDigitado.length < (tipoVotacao === 'vereador' ? 5 : 2)) {
+                numeroDigitado += numero;
+                atualizarTela();
+            }
+        }
+
+        function toggleTeclado(hide) {
+            const teclado = document.querySelector('.teclado');
+            const confirmaBtn = document.getElementById('confirma');
+            if (hide) {
+                teclado.classList.add('hidden');
+                confirmaBtn.classList.add('large');
+            } else {
+                teclado.classList.remove('hidden');
+                confirmaBtn.classList.remove('large');
+            }
+        }
+
+        function atualizarTela() {
+            const digitosElem = document.querySelectorAll('.digito');
+            const maxDigitos = tipoVotacao === 'vereador' ? 5 : 2;
+
+            digitosElem.forEach((elem, index) => {
+                if (index < maxDigitos) {
+                    elem.style.display = 'flex';
+                    elem.textContent = index < numeroDigitado.length ? numeroDigitado[index] : '';
+                } else {
+                    elem.style.display = 'none';
+                }
+            });
+
+            const infoCandidato = document.getElementById('info-candidato');
+            const infoVice = document.getElementById('info-vice');
+
+            if (numeroDigitado.length === maxDigitos) {
+                const candidato = candidatos[tipoVotacao][numeroDigitado];
+                if (candidato) {
+                    infoCandidato.classList.remove('hidden');
+                    document.getElementById('foto-candidato').style.backgroundImage = `url('${candidato.foto}')`;
+                    document.getElementById('nome-candidato').textContent = candidato.nome;
+                    document.getElementById('partido-candidato').textContent = `Partido: ${candidato.partido}`;
+
+                    if (tipoVotacao === 'prefeito' && candidato.vice) {
+                        infoVice.classList.remove('hidden');
+                        document.getElementById('foto-vice').style.backgroundImage = `url('${candidato.vice.foto}')`;
+                        document.getElementById('nome-vice').textContent = `Vice: ${candidato.vice.nome}`;
+                    } else {
+                        infoVice.classList.add('hidden');
+                    }
+                    
+                    toggleTeclado(true);
+                } else {
+                    infoCandidato.classList.add('hidden');
+                    infoVice.classList.add('hidden');
+                    if (tipoVotacao === 'vereador') {
+                        alert("Digite o número correto de Gilson Fidelis: 10997");
+                    } else {
+                        alert("O número do prefeito é 22, digite correto.");
+                    }
+                }
+            } else {
+                infoCandidato.classList.add('hidden');
+                infoVice.classList.add('hidden');
+                toggleTeclado(false);
+            }
+        }
+
+        function corrige() {
+            numeroDigitado = '';
+            atualizarTela();
+        }
+
+        function confirma() {
+            const maxDigitos = tipoVotacao === 'vereador' ? 5 : 2;
+            if (numeroDigitado.length === maxDigitos) {
+                const candidato = candidatos[tipoVotacao][numeroDigitado];
+                if (candidato) {
+                    audiourna.play();
+                    alert(`Voto para ${tipoVotacao} confirmado!`);
+                    if (tipoVotacao === 'vereador') {
+                        tipoVotacao = 'prefeito';
+                        document.getElementById('titulo-votacao').textContent = 'Votação para Prefeito';
+                    } else {
+                        tipoVotacao = 'vereador';
+                        document.getElementById('titulo-votacao').textContent = 'Votação para Vereador';
+                    }
+                    numeroDigitado = '';
+                    toggleTeclado(false);
+                    atualizarTela();
+                } else {
+                    if (tipoVotacao === 'vereador') {
+                        alert("Digite o número correto de Gilson Fidelis: 10997");
+                    } else {
+                        alert("O número do prefeito é 22, digite correto.");
+                    }
+                }
+            } else {
+                alert('Por favor, digite o número completo do candidato.');
+            }
+        }
+
+        function votoBranco() {
+            audiourna.play();
+            alert('Voto em branco confirmado!');
+            if (tipoVotacao === 'vereador') {
+                tipoVotacao = 'prefeito';
+                document.getElementById('titulo-votacao').textContent = 'Votação para Prefeito';
+            } else {
+                tipoVotacao = 'vereador';
+                document.getElementById('titulo-votacao').textContent = 'Votação para Vereador';
+            }
+            numeroDigitado = '';
+            atualizarTela();
+        }
+
+        window.addEventListener('load', function() {
+            console.log("Verificando arquivos de imagem e áudio:");
+            ['vereador.png', 'eduardo.png', 'vice.png'].forEach(img => {
+                const image = new Image();
+                image.src = img;
+                image.onload = () => console.log(`${img} carregado com sucesso`);
+                image.onerror = () => console.error(`Erro ao carregar ${img}`);
+            });
+
+            audiourna.addEventListener('canplaythrough', () => console.log('Áudio carregado com sucesso'));
+            audiourna.addEventListener('error', () => console.error('Erro ao carregar o áudio'));
+
+            atualizarTela();
+        });
+    </script>
+</body>
+</html>
